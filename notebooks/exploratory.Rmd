@@ -1,9 +1,2 @@
 ```{r}
-library(tidyverse)
-```
-
-```{r}
-df <- read_csv("../data/raw/MERGED2015_16_PP.csv",
-               col_types=cols(COSTT4_A=col_double()),
-               na=c("NULL","NA","PrivacySuppressed"))
 ```
