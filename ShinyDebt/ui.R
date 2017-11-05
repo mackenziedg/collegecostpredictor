@@ -18,38 +18,45 @@ shinyUI(fluidPage(
   # Sidebar with a slider input for number of bins 
   sidebarLayout(
     sidebarPanel(
-       sliderInput("satScore",
+       numericInput("satScore",
                    "Sat Score:",
                    min = 400,
                    max = 1600,
-                   value = 1100),
-       sliderInput("actScore",
+                   value = 1100,
+                   step = 50),
+       
+       numericInput("actScore",
                    "ACT Score:",
                    min = 1,
                    max = 36,
                    value = 21),
+       
        selectInput("citytype", "City Type",
                    c("Urban" = "urb",
                      "Metropolitan" = "metr",
                      "Rural" = "rur")),
+       
        selectInput("state", "Choose a state:",
                    list(`East Coast` = c("NY", "NJ", "CT"),
                         `West Coast` = c("WA", "OR", "CA"),
-                        `Midwest` = c("MN", "WI", "IA"))
-       ),
+                        `Midwest` = c("MN", "WI", "IA"))),
        
        selectInput("pub_priv", "Public or Private?",
                    c("Public" = "pub",
                      "Private" = "priv")),
+       
        selectInput("size", "Size of School?",
                    c("Small" = "small",
                      "Medium" = "med",
-                     "Large" = "large"))
+                     "Large" = "large")),
+
+       selectInput("income", "Family Income?",
+                   c("<$30,000" = "low",
+                     "$30,000-$75,000" = "medium",
+                     ">$75,000" = "high"))
     ),
     
-    
-    
-    
+        
     # Show a plot of the generated distribution
     mainPanel(
        plotOutput("distPlot")
