@@ -8,6 +8,7 @@
 #
 
 library(shiny)
+library(data.table)
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
@@ -42,8 +43,8 @@ shinyUI(fluidPage(
                         `Midwest` = c("MN", "WI", "IA"))),
        
        selectInput("pub_priv", "Public or Private?",
-                   c("Public" = "pub",
-                     "Private" = "priv")),
+                   c("Public" = 1,
+                     "Private" = 2)),
        
        selectInput("size", "Size of School?",
                    c("Small" = "small",
@@ -59,7 +60,7 @@ shinyUI(fluidPage(
         
     # Show a plot of the generated distribution
     mainPanel(
-       plotOutput("distPlot")
+        dataTableOutput('table')
     )
   )
 ))
