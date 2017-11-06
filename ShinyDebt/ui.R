@@ -40,11 +40,13 @@ shinyUI(fluidPage(
        selectInput("state", "Choose a state:",
                    list(`East Coast` = c("NY", "NJ", "CT"),
                         `West Coast` = c("WA", "OR", "CA"),
-                        `Midwest` = c("MN", "WI", "IA"))),
+                        `Midwest` = c("MN", "WI", "IA"),
+                        `Other` = c("ANY"))),
        
        selectInput("pub_priv", "Public or Private?",
                    c("Public" = 1,
-                     "Private" = 2)),
+                     "Private" = 2,
+                     "Not sure" = "ANY")),
        
        selectInput("size", "Size of School?",
                    c("Small" = "small",

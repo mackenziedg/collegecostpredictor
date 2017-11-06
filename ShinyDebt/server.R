@@ -34,17 +34,20 @@ shinyServer(function(input, output) {
 
     ## Create a rendered table of the top results based on the input selected.
     ## Probably need to create an "any" option for some of the drop downs.
+    apply_settings_to_df <- function(df){
+      df = filter(df, standardized_score < acceptable_scores())
+      if (input$pub_priv != "ANY")
+        df = filter(df, CONTROL == input$pub_priv)
+      if (input$state != "ANY")
+        df = filter(df, STABBR == input$state)
+      df = mutate(df, ADM_RATE = round(ADM_RATE, 3))
+      df = select(df, one_of(c("INSTNM", "ADM_RATE", "ACTCMMID", "C150_4")))
+      return(df)
+    }
     
     output$table <- renderDataTable(
-        df %>%
-        ## Filter schools based on user input
-        filter(standardized_score < acceptable_scores()) %>%
-        filter(CONTROL == input$pub_priv) %>%
-        filter(STABBR == input$state) %>%
-        ## Adjust data for viewing---round values, select + rename columns etc.
-        mutate(ADM_RATE=round(ADM_RATE, 3)) %>%
-        select(one_of(c("INSTNM", "ADM_RATE", "ACTCMMID", "C150_4"))),
-        options=list(pageLength=5)
+      apply_settings_to_df(df),
+        options = list(pageLength=5)
     )
 
 })
