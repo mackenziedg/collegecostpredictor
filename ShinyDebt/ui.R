@@ -62,7 +62,11 @@ shinyUI(fluidPage(
         
     # Show a plot of the generated distribution
     mainPanel(
-        dataTableOutput('table')
+      tabsetPanel(
+        tabPanel("Table", dataTableOutput('table')),
+        tabPanel("Plot1", plotOutput('plot1')),
+        tabPanel("Plot2", plotOutput('plot2'))
+      )
     )
   )
 ))

@@ -49,5 +49,13 @@ shinyServer(function(input, output) {
       apply_settings_to_df(df),
         options = list(pageLength=5)
     )
+    
+    output$plot1 <- renderPlot({
+      plot(df$standardized_score)
+    })
+    
+    output$plot2 <- renderPlot({
+      plot(df$ADM_RATE)
+    })
 
 })
