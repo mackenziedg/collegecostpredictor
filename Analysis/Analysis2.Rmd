@@ -132,3 +132,94 @@ boxplot(HI_INC_DEBT_MDN~STABBR, main = 'High-Income Debt per State', xlab = 'Sta
 ```
 
 Here, we look at states and the average amount of debt they have for students in low-income families and high-income families. Interestingly, it looks like higher-income students have more variance in their debts compared to lower-income students and the amount of debt that they acrue during college. Or, it seems that states have a more uniform average debt for low-income students compared to higher-income students. 
+
+
+Here we create a new column variable calles "standardized score that is a combination SAT math, reading, and ACT scores"
+
+```{r}
+df2 <- mutate(df1, standardized_score = ((SATVRMID / 800) + (SATMTMID/800) + (ACTCMMID/36))/3  )
+#write.csv(df2, '2010-15_withscore.csv', row.names = FALSE)
+```
+Then check our explanitory variables and how they affect salary, debt, and acceptance rate of the college.
+
+```{r}
+#size of school
+
+attach(df2)
+#order by size
+df2 <- df2[order(-UGDS),]
+
+#major outliers affecting data (university of phoenix w/ 300,000 students)
+df2 <- df2[df2$UGDS < 50000,]
+
+#mean school size
+mean(df2$UGDS, na.rm = TRUE)
+
+#group schools into small, med, and large categories
+
+levels <- c(0, 5000,15000,Inf)
+labels <- c("small", "medium", "large")
+df2 <- df2 %>% mutate(size_factor = cut(df2$UGDS, levels, labels = labels))
+
+#check to see if expected earnings increase or decrease
+
+library(ggplot2)
+ggplot(data = df2, aes(x = UGDS, y =MD_EARN_WNE_P6)) + geom_boxplot(aes(fill = size_factor), width = 0.8) + theme_bw()
+
+
+#admissions rate
+
+ggplot(data = df2, aes(x = UGDS, y =ADM_RATE)) + geom_boxplot(aes(fill = size_factor), width = 0.8) + theme_bw()
+
+#repay rates for Low, med, and high income across different sized colleges
+
+require(gridExtra)
+
+plot1 <- ggplot(data = df2, aes(x = UGDS, y =LO_INC_RPY_5YR_RT)) + geom_boxplot(aes(fill = size_factor), width = 0.8) + theme_bw() + labs(x= "Size", y = "Loan repayment rate", fill = "category", title = "Low Income")
+plot3 <- ggplot(data = df2, aes(x = UGDS, y =HI_INC_RPY_5YR_RT)) + geom_boxplot(aes(fill = size_factor), width = 0.8) + theme_bw()+ labs(x= "Size", y = "repayment rate", fill = "category", title = "High Income")
+
+grid.arrange(plot1,plot3, ncol=2)
+
+```
+
+```{r}
+#some stats based on major
+
+#for each school identify which major is awarded the most degrees
+#colnames(df2[,51:88])[apply(df2[, 51:88],1,which.max)]
+
+df2$popular_major <- NA
+df2$popular_major <- colnames(df2[,51:88])[max.col(df[1:8505,51:88],ties.method="first")]
+
+barplot(prop.table(table(df2$popular_major)))
+#the most popular were PCIP51, PCIP52, PCIP24, PCIP11, PCIP50, PCIP47, PCIP39
+
+pop_majors <- df2[popular_major == c('PCIP51', 'PCIP52', 'PCIP24', 'PCIP11', 'PCIP50', 'PCIP47', 'PCIP39'),]
+pop_majors <- pop_majors[complete.cases(pop_majors$popular_major),]
+
+ggplot(data = pop_majors, aes(x = popular_major, y =MD_EARN_WNE_P6)) + geom_boxplot(aes(fill =popular_major ), width = 0.8) + theme_bw() + labs(x= "major", y = "income", fill = "major")
+
+
+#lets figure out how things change across schools with most popluar majors
+
+
+
+```
+
+```{r}
+#some stats based on your standardized test scores
+
+
+par(mfrow=c(2,2))
+plot(df2$standardized_score, df2$ADM_RATE, xlab = "standardized test score", ylab = "admission rate", col = "blue")
+
+plot(df2$standardized_score, df2$MD_EARN_WNE_P6, xlab = "standardized test score", ylab = "salary", col = "blue")
+
+plot(df2$standardized_score, df2$TUITIONFEE_OUT, xlab = "standardized test score", ylab = "tuition", col = "blue")
+#the higher your SAT score the higher estimated tuition cost
+
+
+
+
+```
+
