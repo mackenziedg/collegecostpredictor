@@ -10,6 +10,7 @@
 library(shiny)
 library(readr)
 library(dplyr)
+library(plyr)
 library(data.table)
 
 # Define server logic required to draw a histogram
@@ -41,7 +42,8 @@ shinyServer(function(input, output) {
       if (input$state != "ANY")
         df = filter(df, STABBR == input$state)
       df = mutate(df, ADM_RATE = round(ADM_RATE, 3))
-      df = select(df, one_of(c("INSTNM", "ADM_RATE", "ACTCMMID", "C150_4")))
+      df = select(df, one_of(c("INSTNM", "ADM_RATE", "C150_4", "STABBR")))
+      df = rename(df, c("INSTNM"="Institution", "ADM_RATE" = "Admission Rate", "C150_4" = "Completion Rate", "STABBR" = "State"))
       return(df)
     }
     
