@@ -32,16 +32,17 @@ shinyUI(fluidPage(
                    max = 36,
                    value = 21),
        
-       selectInput("citytype", "City Type",
-                   c("Urban" = "urb",
-                     "Metropolitan" = "metr",
-                     "Rural" = "rur")),
-       
        selectInput("state", "Choose a state:",
-                   list(`East Coast` = c("NY", "NJ", "CT"),
-                        `West Coast` = c("WA", "OR", "CA"),
-                        `Midwest` = c("MN", "WI", "IA"),
-                        `Other` = c("ANY"))),
+                   list(`Any` = c("ANY"),
+                        "AL", "AK", "AZ", "AR", "CA", "CO",
+                        "CT", "DE", "FL", "GA", "HI", "ID",
+                        "IL", "IN", "IA", "KS", "KY", "LA",
+                        "ME", "MD", "MA", "MI", "MN", "MS",
+                        "MO", "MT", "NE", "NV", "NH", "NJ",
+                        "NM", "NY", "NC", "ND", "OH", "OK",
+                        "OR", "PA", "RI", "SC", "SD", "TN",
+                        "TX", "UT", "VT", "VA", "WA", "WV",
+                        "WI", "WY")),
        
        selectInput("pub_priv", "Public or Private?",
                    c("Public" = 1,
@@ -49,7 +50,8 @@ shinyUI(fluidPage(
                      "Not sure" = "ANY")),
        
        selectInput("size", "Size of School?",
-                   c("Small" = "small",
+                   c("Any" = "ANY",
+                     "Small" = "small",
                      "Medium" = "med",
                      "Large" = "large")),
 

@@ -8,8 +8,8 @@
 #
 
 library(shiny)
-library(readr)
-library(dplyr)
+library(tidyverse)
+library(plyr)
 library(data.table)
 
 # Define server logic required to draw a histogram
@@ -32,16 +32,24 @@ shinyServer(function(input, output) {
     acceptable_scores <- reactive(user_std_score() * 1.1)
 
 
-    ## Create a rendered table of the top results based on the input selected.
-    ## Probably need to create an "any" option for some of the drop downs.
     apply_settings_to_df <- function(df){
-      df = filter(df, standardized_score < acceptable_scores())
+      cols <- c("INSTNM")
+      df <- filter(df, standardized_score < acceptable_scores())
       if (input$pub_priv != "ANY")
-        df = filter(df, CONTROL == input$pub_priv)
+          df <- filter(df, CONTROL == input$pub_priv)
+      else{
+          df <- mutate(df, SchoolType=mapvalues(CONTROL, c(1, 2, 3), c("Public", "Private", "For-profit")))
+          cols <- c(cols, "SchoolType")
+      }
       if (input$state != "ANY")
-        df = filter(df, STABBR == input$state)
-      df = mutate(df, ADM_RATE = round(ADM_RATE, 3))
-      df = select(df, one_of(c("INSTNM", "ADM_RATE", "ACTCMMID", "C150_4")))
+          df <-  filter(df, STABBR == input$state)
+      else
+          cols <- c(cols, "STABBR") 
+      df <-  mutate(df, ADM_RATE = round(ADM_RATE, 3))
+
+      ## Append columns which always get shown here
+      cols <- c(cols, "ADM_RATE")
+      df <-  select(df, one_of(cols))
       return(df)
     }
     
