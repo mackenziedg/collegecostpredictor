@@ -50,6 +50,7 @@ shinyServer(function(input, output) {
       ## Append columns which always get shown here
       cols <- c(cols, "ADM_RATE")
       df <-  select(df, one_of(cols))
+      df = rename(df, c("INSTNM"="Institution", "ADM_RATE" = "Admission Rate", "C150_4" = "Completion Rate", "STABBR" = "State"))
       return(df)
     }
     

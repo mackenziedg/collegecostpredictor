@@ -19,6 +19,7 @@ shinyUI(fluidPage(
   # Sidebar with a slider input for number of bins 
   sidebarLayout(
     sidebarPanel(
+      h5("Please answer a few questions:\n"),
        numericInput("satScore",
                    "Sat Score:",
                    min = 400,
