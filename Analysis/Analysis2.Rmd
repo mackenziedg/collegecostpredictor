@@ -27,7 +27,7 @@ The dataset is large, spanning over 15 years with 1700 variables. To make our an
 An average student would like to look at the most recent statistics for a college - so with over 15+ years of data, we only looked at the last 5 years of relevant college statistics. To do this, we merged the years 2010-2015 into one large college data csv file, then took the averages of every column for each College/University. We do this with the following code:
 
 ```{r}
-df1<-read.csv(file='MERGED_2010-15_selected_columns.csv', sep = ',')
+df1<-read.csv(file='C:/Users/susmani/Documents/Year 5/Courses/Data Munging/GroupProject1/CollegeScorecard_Raw_Data_2017/CollegeScorecard_Raw_Data/MERGED_2010-15_selected_columns.csv', sep = ',')
 df<-df1%>%
   group_by(UNITID, INSTNM, STABBR) %>%   
   summarise_all(funs(mean(.,na.rm=TRUE)))
@@ -71,7 +71,7 @@ boxplot(SATMTMID ~ STABBR, main = 'Average Math SAT per State', xlab = 'State', 
 We also wanted to look at the average Math SAT score per state. The range of average math SAT scores range from somewhere between 500 and 600 points. This is quite a discrepancy between the states and colleges. Some states have colleges that have very high average MATH scores, like MA (where many Ivy League Universities are located), whereas some states have colleges where they all have similar SAT MATH scores.
 
 ```{r}
-#boxplot(MD_EARN_WNE_P6~STABBR, main = 'Average Income in 6 Years', xlab = 'State', ylab = 'Average Income')
+boxplot(MD_EARN_WNE_P6~STABBR, main = 'Average Income in 6 Years', xlab = 'State', ylab = 'Average Income')
 ```
 
 Here we find the average income for each state within 6 years of graduating. The average income for each state tends to fall between 20,000 and 40,000 with obvious exceptions and outliers in many states. 
@@ -93,15 +93,15 @@ This income statistic is incredibly important, and now we want to look at that s
 ## Explanatory Variable: Student Debt (Low Income vs High Income)
 
 ```{r}
-#plot(LO_INC_DEBT_MDN, LO_INC_RPY_7YR_RT, xlab = 'Low-Income Debt', ylab = '7-Year Repayment Rate', main = '7-Year Repayment Rates for Low Income Family Debts')
-#summary(lm(LO_INC_RPY_7YR_RT ~ LO_INC_DEBT_MDN))
+plot(LO_INC_DEBT_MDN, LO_INC_RPY_7YR_RT, xlab = 'Low-Income Debt', ylab = '7-Year Repayment Rate', main = '7-Year Repayment Rates for Low Income Family Debts')
+summary(lm(LO_INC_RPY_7YR_RT ~ LO_INC_DEBT_MDN))
 ```
 
 This plot looks at 7-Year Repayment Rates for Low-Income Family Debts. We want to see if there is a linear association between whether a students comes from a low-income family and whether they will be able to pay off their loans in 7 years. From this, we seem to have unit increase in repayment rate for every increase in 'debt' that a lower-income student has. We see that a low-income student with larger debt actually has a higher repayment rate in 7 years. Calling the lm function on a regression between debt and rate, we see that our beta estimate is 1.761e-05 and has a p-value of 2e-16. Let's compare this to the 7-Year Repayment Rate for Higher Income students. 
 
 ```{r}
-#plot(HI_INC_DEBT_MDN, HI_INC_RPY_7YR_RT, xlab = 'High-Income Debt', ylab = '7-Year Repayment Rate', main = '7-Year Repayment Rates for High Income Family Debts')
-#summary(lm(HI_INC_RPY_7YR_RT ~ HI_INC_DEBT_MDN))
+plot(HI_INC_DEBT_MDN, HI_INC_RPY_7YR_RT, xlab = 'High-Income Debt', ylab = '7-Year Repayment Rate', main = '7-Year Repayment Rates for High Income Family Debts')
+summary(lm(HI_INC_RPY_7YR_RT ~ HI_INC_DEBT_MDN))
 ```
 
 We see the trend continue in that a student coming from a high-income family with higher debt has higher repayment rates. The average rates are higher because these are families with more funds / less loans because of their income bracket. Here, the beta estimate is 1.055e-05 which is higher than the beta estimate from low-income families by approximately 2 magnitudes. Visually, the variance is also smaller compared to low-income family debt.
@@ -133,7 +133,6 @@ boxplot(HI_INC_DEBT_MDN~STABBR, main = 'High-Income Debt per State', xlab = 'Sta
 
 Here, we look at states and the average amount of debt they have for students in low-income families and high-income families. Interestingly, it looks like higher-income students have more variance in their debts compared to lower-income students and the amount of debt that they acrue during college. Or, it seems that states have a more uniform average debt for low-income students compared to higher-income students. 
 
-
 Here we create a new column variable calles "standardized score that is a combination SAT math, reading, and ACT scores"
 
 ```{r}
@@ -157,9 +156,11 @@ mean(df2$UGDS, na.rm = TRUE)
 
 #group schools into small, med, and large categories
 
+require(dplyr)
 levels <- c(0, 5000,15000,Inf)
 labels <- c("small", "medium", "large")
-df2 <- df2 %>% mutate(size_factor = cut(df2$UGDS, levels, labels = labels))
+df2$size_factor<-NA
+df2$size_factor <- cut(df2$UGDS,levels, labels = labels)
 
 #check to see if expected earnings increase or decrease
 
@@ -182,21 +183,22 @@ grid.arrange(plot1,plot3, ncol=2)
 
 ```
 
-
 ```{r}
+#some stats based on major
+
 #for each school identify which major is awarded the most degrees
 #colnames(df2[,51:88])[apply(df2[, 51:88],1,which.max)]
 attach(df2)
-#df2$popular_major <- NA
-#df2$popular_major <- colnames(df2[,51:88])[max.col(df2[,51:88],ties.method="first")]
+df2$popular_major <- NA
+df2$popular_major <- colnames(df2[,51:88])[max.col(df2[,51:88],ties.method="first")]
 
-#barplot(prop.table(table(df2$popular_major)))
+barplot(prop.table(table(df2$popular_major)))
 #the most popular were PCIP51, PCIP52, PCIP24, PCIP11, PCIP50, PCIP47, PCIP39
 
-#pop_majors <- df2[popular_major == c('PCIP51', 'PCIP52', 'PCIP24', 'PCIP11', 'PCIP50', 'PCIP47', 'PCIP39'),]
-#pop_majors <- pop_majors[complete.cases(pop_majors$popular_major),]
+pop_majors <- df2[df2$popular_major == c('PCIP51', 'PCIP52', 'PCIP24', 'PCIP11', 'PCIP50', 'PCIP47', 'PCIP39'),]
+pop_majors <- pop_majors[complete.cases(pop_majors$popular_major),]
 
-#ggplot(data = pop_majors, aes(x = popular_major, y =MD_EARN_WNE_P6)) + geom_boxplot(aes(fill =popular_major ), width = 0.8) + theme_bw() + labs(x= "major", y = "income", fill = "major")
+ggplot(data = pop_majors, aes(x = popular_major, y =MD_EARN_WNE_P6)) + geom_boxplot(aes(fill =popular_major ), width = 0.8) + theme_bw() + labs(x= "major", y = "income", fill = "major")
 
 
 #lets figure out how things change across schools with most popluar majors
