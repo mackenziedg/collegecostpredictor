@@ -8,51 +8,69 @@
 #
 
 library(shiny)
+library(data.table)
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
   
   # Application title
-  titlePanel("College Cost Predictor"),
+  titlePanel(title = "", windowTitle = "ShinyDebt - College Cost Predictor"),
+  a(href ="https://github.com/mackenziedg/collegecostpredictor/tree/shiny", h3("ShinyDebt")),
   
   # Sidebar with a slider input for number of bins 
   sidebarLayout(
     sidebarPanel(
-       sliderInput("satScore",
+      h5("Please answer a few questions:\n"),
+       numericInput("satScore",
                    "Sat Score:",
                    min = 400,
                    max = 1600,
-                   value = 1100),
-       sliderInput("actScore",
+                   value = 1100,
+                   step = 50),
+       
+       numericInput("actScore",
                    "ACT Score:",
                    min = 1,
                    max = 36,
                    value = 21),
-       selectInput("citytype", "City Type",
-                   c("Urban" = "urb",
-                     "Metropolitan" = "metr",
-                     "Rural" = "rur")),
+       
        selectInput("state", "Choose a state:",
-                   list(`East Coast` = c("NY", "NJ", "CT"),
-                        `West Coast` = c("WA", "OR", "CA"),
-                        `Midwest` = c("MN", "WI", "IA"))
-       ),
+                   list(`Any` = c("ANY"),
+                        "AL", "AK", "AZ", "AR", "CA", "CO",
+                        "CT", "DE", "FL", "GA", "HI", "ID",
+                        "IL", "IN", "IA", "KS", "KY", "LA",
+                        "ME", "MD", "MA", "MI", "MN", "MS",
+                        "MO", "MT", "NE", "NV", "NH", "NJ",
+                        "NM", "NY", "NC", "ND", "OH", "OK",
+                        "OR", "PA", "RI", "SC", "SD", "TN",
+                        "TX", "UT", "VT", "VA", "WA", "WV",
+                        "WI", "WY")),
        
        selectInput("pub_priv", "Public or Private?",
-                   c("Public" = "pub",
-                     "Private" = "priv")),
+                   c("Public" = 1,
+                     "Private" = 2,
+                     "Not sure" = "ANY")),
+       
        selectInput("size", "Size of School?",
-                   c("Small" = "small",
+                   c("Any" = "ANY",
+                     "Small" = "small",
                      "Medium" = "med",
-                     "Large" = "large"))
+                     "Large" = "large")),
+
+       selectInput("income", "Family Income?",
+                   c("<$30,000" = "low",
+                     "$30,000-$75,000" = "medium",
+                     ">$75,000" = "high"))
     ),
     
-    
-    
-    
+        
     # Show a plot of the generated distribution
     mainPanel(
-       plotOutput("distPlot")
+      tabsetPanel(
+        tabPanel("Table", dataTableOutput('table')),
+        tabPanel("Plot1", plotOutput('plot1')),
+        tabPanel("Plot2", plotOutput('plot2'))
+      )
     )
   )
 ))
