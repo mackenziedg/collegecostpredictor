@@ -152,6 +152,18 @@ write.csv(df, 'MERGED_2010-15_AVG.csv', row.names = FALSE)</code></pre>
 <pre><code>## [1] 0.3217576</code></pre>
 <p>We can see that the total number of N/As in the data set is equal to 271,205. This is about 30 percent of the total number of values in the data set. Though, this proportion is inflated by the fact that a number of columns only have N/A values. The average number of NAs in a given row is also equal to 31.</p>
 <p>We also look at if there is an appropriate amount of data to even explore. If we just merge the past 5 years of data with our selected columns, there would be almost 40,000 observations (colleges), since each college would repeat 5 times and there are over 7,000 colleges to have data for. When we filter down with the average of the past years, we receive 8514 observations of 99 variables. This gives us an appropriate amount of data to look at.</p>
+<p>Another data metric we could use is readability of the data. Without a dictionary, a lot of the columns have strange and very similar names that make it inconvenient to always look back at the Data Dictionary file. In order to test this, we looked at the number of similar column names:</p>
+<pre class="r"><code>length(grep(&quot;PCI&quot;, colnames(df)))</code></pre>
+<pre><code>## [1] 38</code></pre>
+<pre class="r"><code>length(grep(&quot;PCI&quot;, colnames(df)))/length(colnames(df))</code></pre>
+<pre><code>## [1] 0.3838384</code></pre>
+<pre class="r"><code>length(grep(&quot;HI&quot;, colnames(df)))</code></pre>
+<pre><code>## [1] 6</code></pre>
+<pre class="r"><code>length(grep(&quot;LO&quot;, colnames(df)))</code></pre>
+<pre><code>## [1] 9</code></pre>
+<pre class="r"><code>length(grep(&quot;HI&quot;, colnames(df)))</code></pre>
+<pre><code>## [1] 6</code></pre>
+<p>Thus, we can see that many columns have very similar names, with “PCI” itself having 38 similar named columns. The specific similar named rows for “PCI” was almost 40 percent. Thus, the data set with respect to its column names are not very readable.</p>
 </div>
 </div>
 <div id="explanatory-variable-state" class="section level2">
