@@ -14,7 +14,8 @@ library(data.table)
 shinyUI(fluidPage(
   
   # Application title
-  titlePanel("College Cost Predictor"),
+  titlePanel(title = "", windowTitle = "ShinyDebt - College Cost Predictor"),
+  a(href ="https://github.com/mackenziedg/collegecostpredictor/tree/shiny", h3("ShinyDebt")),
   
   # Sidebar with a slider input for number of bins 
   sidebarLayout(
