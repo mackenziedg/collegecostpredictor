@@ -27,7 +27,7 @@ The dataset is large, spanning over 15 years with 1700 variables. To make our an
 An average student would like to look at the most recent statistics for a college - so with over 15+ years of data, we only looked at the last 5 years of relevant college statistics. To do this, we merged the years 2010-2015 into one large college data csv file, then took the averages of every column for each College/University. We do this with the following code:
 
 ```{r}
-df1<-read.csv(file='C:/Users/susmani/Documents/Year 5/Courses/Data Munging/GroupProject1/CollegeScorecard_Raw_Data_2017/CollegeScorecard_Raw_Data/MERGED_2010-15_selected_columns.csv', sep = ',')
+df1<-read.csv(file='MERGED_2010-15_selected_columns.csv', sep = ',')
 df<-df1%>%
   group_by(UNITID, INSTNM, STABBR) %>%   
   summarise_all(funs(mean(.,na.rm=TRUE)))
@@ -69,7 +69,7 @@ Thus, we can see that many columns have very similar names, with "PCI" itself ha
 
 Here, we look at some interesting relations between different states and their college descriptive statistics. On our first boxplot, we look at the different admission rates per state. 
 
-```{r}
+```{r, message=FALSE}
 attach(df)
 boxplot(ADM_RATE ~ STABBR, main = 'Admission Rates per State', xlab = 'State', ylab = 'Admission Rate')
 ```
@@ -153,7 +153,7 @@ df2 <- mutate(df, standardized_score = ((SATVRMID / 800) + (SATMTMID/800) + (ACT
 ```
 Then check our explanitory variables and how they affect salary, debt, and acceptance rate of the college.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 #size of school
 
 attach(df2)
@@ -195,7 +195,7 @@ grid.arrange(plot1,plot3, ncol=2)
 
 ```
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 #some stats based on major
 
 #for each school identify which major is awarded the most degrees
@@ -212,27 +212,17 @@ pop_majors <- pop_majors[complete.cases(pop_majors$popular_major),]
 
 ggplot(data = pop_majors, aes(x = popular_major, y =MD_EARN_WNE_P6)) + geom_boxplot(aes(fill =popular_major ), width = 0.8) + theme_bw() + labs(x= "major", y = "income", fill = "major")
 
-
-#lets figure out how things change across schools with most popluar majors
-
-
-
+#lets figure out how things change across schools with most popular majors
 ```
 
 ```{r}
 #some stats based on your standardized test scores
-
-
 par(mfrow=c(2,2))
 plot(df2$standardized_score, df2$ADM_RATE, xlab = "standardized test score", ylab = "admission rate", col = "blue")
 
 plot(df2$standardized_score, df2$MD_EARN_WNE_P6, xlab = "standardized test score", ylab = "salary", col = "blue")
 
 plot(df2$standardized_score, df2$TUITIONFEE_OUT, xlab = "standardized test score", ylab = "tuition", col = "blue")
-#the higher your SAT score the higher estimated tuition cost
-
-
-
-
+#The higher the average SAT score the more prestigious the school is, resulting in a higher tuition. 
 ```
 
