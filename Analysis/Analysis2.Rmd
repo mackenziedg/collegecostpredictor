@@ -1,0 +1,276 @@
+---
+title: "Analysis"
+author: "Saad Usmani, Beau Britain, Shane Caldwell, Mackenzie Gray"
+date: "November 4, 2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+```
+
+## Introduction
+
+\bigskip
+\bigskip
+\bigskip
+
+This document analyzes the College Scorecard Dataset provided by the Federal Government from the years 1996 - 2016. The dataset includes over 1700+ variables observed from over 7000+ colleges in the United States. We will explore this dataset and look at interesting relationships between variables and colleges. We also provide an R Shiny App (ShinyDebt) that lets a user put in personal application information and desired college preferences to look at colleges that would be a "best fit" based on provided information, as well as provide potential costs related to loan repayment and average income after graduation.
+
+The dataset is large, spanning over 15 years with 1700 variables. While still small enough to read significant chunks into R, it would still be difficult to clean and interpret that magnitude of data. 
+
+To make our analysis simpler, we chose around 81 variables to look at that relate to a college's descriptive statistics - like admission rates, average SAT/ACT score, average percentage of degrees awarded to a specific major, number of undergraduate students, tuition rates, private and public colleges. We spend the rest of the document detailing useful relationships between cofactors variables. 
+
+## Cleaning Our Dataset
+
+An average student would like to look at the most recent statistics for a college - these are most likely to affect their prospects. So, over 15+ years of data, we only looked at the last 5 years of relevant college statistics. To do this, we merged the years 2010-2015 into one large college data csv file, then took the unweighted averages of every column for each College/University. We decided not to weight the data from each year as the last 5 years are all recent enough to possibly reflect relevant trends. This was done as follows:
+
+```{r}
+df1<-read.csv(file='MERGED_2010-15_selected_columns.csv', sep = ',')
+df<-df1%>%
+  group_by(UNITID, INSTNM, STABBR) %>%   
+  summarise_all(funs(mean(.,na.rm=TRUE)))
+write.csv(df, 'MERGED_2010-15_AVG.csv', row.names = FALSE)
+```
+
+The write.csv line mearly writes a csv file that can easily be looked at. 
+
+### Assessing Quality of Data
+
+Looking at our new table that now consists of only 99 variables, we can assess the quality of our data. 
+
+Two measures of data that matter to us when finding inference are completeness and interpratibility. Here we measure completeness as the percent of the data that is not NA or NULL. This might warn us before using a variable that, while perhaps promising in theory, doesn't have the appropriate number of values to map out relationships.
+
+The second measure of data we use is interpratibility. We consider in this scale for numbers to be completely interpretable. However, should we be dealing with a character vector, we check to determine whether or not this character could be used as a factor. If the unique values in the character values are greater than 10% of the length of the vector, we say there are too many values for this to be useful for a factor. This might mark a case where we want to recode a variable using buckets. 
+
+```{r}
+# returns list of interpretability and completeness metrics
+data_quality <- function(df){
+  completeness <- get_df_completeness(df)
+  interpretability <- get_df_interpretability(df)
+  metrics <- list(interpretability = interpretability,
+                  completeness = completeness)
+  return (metrics)
+}
+
+#wrapper for apply function
+get_df_completeness <- function(df){
+  return (apply(df, 2,
+                get_column_completeness))
+}
+
+#Calculates completeness as percentage of non-NULL values
+get_column_completeness <- function(col){
+  all_values <- length(col)
+  bad_values <- sum(is.na(col))
+  return (1 - (bad_values) / (all_values))
+}
+#wrapper for apply function
+get_df_interpretability <- function(df){
+  return (apply(df, 2,
+                get_column_interpretability))
+}
+
+# Calculates completeness as percentage of values 
+# that are easy to use in computation
+get_column_interpretability <- function(col){
+  if (typeof(col) == "character"){
+    potential_factors <- length(unique(col))
+    # If there are too many unique char values
+    # To be broken up usefully into factors
+    # Then interpretability is low
+    if (potential_factors > length(col) / 10)
+      return (0)
+    else{
+      return (1)
+    }
+  }else{
+    all_values <- length(col)
+    na_values <- (sum(is.na(col)))
+    return (1 - (na_values) / (all_values))
+  }
+}
+data_quality(df)
+```
+
+Sum of the data is as low as 28% percent complete, which bodes poorly for doing analysis with all of the data. Anything less than around 70% full would be grounds for removal, just because we're losing so many colleges at that point. 
+
+We make much stronger statements about interpatibility - only 0 or 1. We find that for most character values in this dataset, using them as factors would not be appropriate. 
+
+We also look at if there is an appropriate amount of data to even explore. If we just merge the past 5 years of data with our selected columns, there would be almost 40,000 observations (colleges), since each college would repeat 5 times and there are over 7,000 colleges to have data for. When we filter down with the average of the past years, we receive 8514 observations of 99 variables. This gives us an appropriate amount of data to look at. 
+
+Another data metric we could use is readability of the data. Without a dictionary, a lot of the columns have strange and very similar names that make it inconvenient to always look back at the Data Dictionary file. In order to test this, we looked at the number of similar column names:
+
+```{r}
+length(grep("PCI", colnames(df)))
+length(grep("PCI", colnames(df)))/length(colnames(df))
+length(grep("HI", colnames(df)))
+length(grep("LO", colnames(df)))
+length(grep("HI", colnames(df)))
+```
+
+Thus, we can see that many columns have very similar names, with "PCI" itself having 38 similar named columns. The specific similar named rows for "PCI" was almost 40 percent. Thus, the data set with respect to its column names are not very readable. 
+
+## Explanatory Variable: State
+
+Here, we look at some interesting relations between different states and their college descriptive statistics. On our first boxplot, we look at the different admission rates per state. 
+
+```{r, message=FALSE}
+attach(df)
+boxplot(ADM_RATE ~ STABBR, main = 'Admission Rates per State', xlab = 'State', ylab = 'Admission Rate')
+```
+
+From this, we can see that there is a noticeable dip in admission rates between Colorado and Delaware. The range of average admission rates is also quite large for the middle 50 of the states. 
+
+```{r}
+boxplot(SATMTMID ~ STABBR, main = 'Average Math SAT per State', xlab = 'State', ylab = 'Math SAT')
+```
+
+We also wanted to look at the average Math SAT score per state. The range of average math SAT scores range from somewhere between 500 and 600 points. This is quite a discrepancy between the states and colleges. Some states have colleges that have very high average MATH scores, like MA (where many Ivy League Universities are located), whereas some states have colleges where they all have similar SAT MATH scores.
+
+```{r}
+boxplot(MD_EARN_WNE_P6~STABBR, main = 'Average Income in 6 Years', xlab = 'State', ylab = 'Average Income')
+```
+
+Here we find the average income for each state within 6 years of graduating. The average income for each state tends to fall between 20,000 and 40,000 with obvious exceptions and outliers in many states. 
+
+```{r}
+boxplot(LO_INC_RPY_1YR_RT~STABBR, main = 'Low-Income Repayment Rate 1 Year', xlab = 'State', ylab = '1 Year Repayment Rate')
+```
+
+Here, the repayment rate for 1 year for low-income students for all of the states is quite varied. It ranges from 0.2 to as high as 0.5 in some cases. This can be quite a large factor in choosing a college, even though it isn't the obvious factor people look at when choosing a college. For example, choosing a college in Washington -  a state with a high repayment rate - versus a college in Georgia (a much smaller repayment rate) is choosing the difference between a 0.5 repayment rate and less than 0.2. It's a financial factor that makes a difference between states. 
+
+```{r}
+boxplot(HI_INC_RPY_1YR_RT~STABBR, main = 'High-Income Repayment Rate 1 Year', xlab = 'State', ylab = '1 Year Repatment Rate')
+```
+
+Now, if we look at students that come from high income familires and their repayment rates we can see that it is still quite varied, but rates themselves are much larger than low-income rates. The range in this boxplot consists between 0.4 and as high as 0.8. This, logically, makes more sense considering students that come from high income families will have more funds available to payoff their loans. It could also be that high income students might have smaller loans that they'd be able to pay off quicker since they had funds from their family. 
+
+This income statistic is incredibly important, and now we want to look at that specific statistic in much further detail. 
+
+## Explanatory Variable: Student Debt (Low Income vs High Income)
+
+```{r}
+plot(LO_INC_DEBT_MDN, LO_INC_RPY_7YR_RT, xlab = 'Low-Income Debt', ylab = '7-Year Repayment Rate', main = '7-Year Repayment Rates for Low Income Family Debts')
+summary(lm(LO_INC_RPY_7YR_RT ~ LO_INC_DEBT_MDN))
+```
+
+This plot looks at 7-Year Repayment Rates for Low-Income Family Debts. We want to see if there is a linear association between whether a students comes from a low-income family and whether they will be able to pay off their loans in 7 years. From this, we seem to have unit increase in repayment rate for every increase in 'debt' that a lower-income student has. We see that a low-income student with larger debt actually has a higher repayment rate in 7 years. Calling the lm function on a regression between debt and rate, we see that our beta estimate is 1.761e-05 and has a p-value of 2e-16. Let's compare this to the 7-Year Repayment Rate for Higher Income students. 
+
+```{r}
+plot(HI_INC_DEBT_MDN, HI_INC_RPY_7YR_RT, xlab = 'High-Income Debt', ylab = '7-Year Repayment Rate', main = '7-Year Repayment Rates for High Income Family Debts')
+summary(lm(HI_INC_RPY_7YR_RT ~ HI_INC_DEBT_MDN))
+```
+
+We see the trend continue in that a student coming from a high-income family with higher debt has higher repayment rates. The average rates are higher because these are families with more funds / less loans because of their income bracket. Here, the beta estimate is 1.055e-05 which is higher than the beta estimate from low-income families by approximately 2 magnitudes. Visually, the variance is also smaller compared to low-income family debt.
+
+```{r}
+LO_INC_DEBT_MDN.f <- cut(LO_INC_DEBT_MDN,3,labels = c("low", "medium", "high")) 
+boxplot(TUITIONFEE_OUT~LO_INC_DEBT_MDN.f, main = 'Out of State Tuition on Low-Income Family Debt Rates', xlab = 'Low-Income Family Debt', ylab = 'Out of State Tuition Rates')
+HI.f <- cut(HI_INC_DEBT_MDN,3,labels = c("low", "medium", "high"))
+boxplot(TUITIONFEE_OUT~HI.f, main = 'Out of State Tuition on High-Income Family Debt Rates', xlab = 'High-Income Family Debt', ylab = 'Out of State Tuition Rates')
+```
+
+Debt can have many varying values, but we wanted to look at trends between three factors for debt between low-income families and high-income families. We cut the debt into three separately spaced levels (low, medium, high) on the different debt levels and created different box plots to look at the general trends that our explanatory variable can explain. 
+
+In the above two graphs, we looked at out-of-state tuition rates for each college that had low, medium, or high low-income debt. We find that on average colleges that have lower debt on for students in low-income families go to colleges with lower out of state tuition rates. For families that have medium-high debt, the college out-of-sate tuition rates tend to be the same. 
+
+Contrast that with those students who have higher-income families. Here, colleges that have lower debt for students in high-income famlities have lower tuition rates - and that colleges with higher tuition rates also have students in high-income families with higher debt. Are high-income students that have bigger debt more likely to spend more on college because they are able to have families that support them more?
+
+```{r}
+boxplot(RET_FT4~LO_INC_DEBT_MDN.f, main = 'Retention Rates on Low-Income Family Debt Rates', xlab = 'High-Income Family Debt', ylab = 'Retention Rates')
+boxplot(RET_FT4~HI.f, main = 'Retention Rates on High-Income Family Debt Rates', xlab = 'High-Income Family Debt', ylab = 'Retention Rates')
+```
+
+Here, we look at retention rates of colleges and relate them to their lower income family debt rates. We find that they all seem to have similar retention rates for each group. Medium debts tend to have larger retention rates, but only a slightly larger advantage comes to play. We compare this to high-income students and see a striking picture. We again see here that students that come from high-income families and have bigger debt also have higher retention rates.
+
+```{r}
+boxplot(LO_INC_DEBT_MDN~STABBR, main = 'Low-Income Debt per State', xlab = 'State', ylab = 'Low Income Debt', ylim=c(0,30000))
+boxplot(HI_INC_DEBT_MDN~STABBR, main = 'High-Income Debt per State', xlab = 'State', ylab = 'High Income Debt')
+```
+
+Here, we look at states and the average amount of debt they have for students in low-income families and high-income families. Interestingly, it looks like higher-income students have more variance in their debts compared to lower-income students and the amount of debt that they acrue during college. Or, it seems that states have a more uniform average debt for low-income students compared to higher-income students. 
+
+Here we create a new column variable calles "standardized score that is a combination SAT math, reading, and ACT scores"
+
+```{r}
+df2 <- mutate(df, standardized_score = ((SATVRMID / 800) + (SATMTMID/800) + (ACTCMMID/36))/3  )
+#write.csv(df2, '2010-15_withscore.csv', row.names = FALSE)
+```
+Then check our explanitory variables and how they affect salary, debt, and acceptance rate of the college.
+
+```{r, message = FALSE, warning = FALSE}
+#Size of school
+
+attach(df2)
+#Order by size
+df2 <- df2[order(-UGDS),]
+
+#Major outliers affecting data (university of phoenix w/ 300,000 students)
+df2 <- df2[df2$UGDS < 50000,]
+
+#Mean school size
+#mean(df2$UGDS, na.rm = TRUE)
+
+#Group schools into small, med, and large categories
+
+require(dplyr)
+levels <- c(0, 5000,15000,Inf)
+labels <- c("small", "medium", "large")
+df2$size_factor<-NA
+df2$size_factor <- cut(df2$UGDS,levels, labels = labels)
+
+#Check to see if expected earnings increase or decrease
+
+library(ggplot2)
+ggplot(data = df2, aes(x = UGDS, y =MD_EARN_WNE_P6)) + geom_boxplot(aes(fill = size_factor), width = 0.8) + theme_bw()
+
+
+#Admissions rate
+
+ggplot(data = df2, aes(x = UGDS, y =ADM_RATE)) + geom_boxplot(aes(fill = size_factor), width = 0.8) + theme_bw()
+
+#Repay rates for Low, med, and high income across different sized colleges
+
+require(gridExtra)
+
+plot1 <- ggplot(data = df2, aes(x = UGDS, y =LO_INC_RPY_5YR_RT)) + geom_boxplot(aes(fill = size_factor), width = 0.8) + theme_bw() + labs(x= "Size", y = "Loan repayment rate", fill = "category", title = "Low Income")
+plot3 <- ggplot(data = df2, aes(x = UGDS, y =HI_INC_RPY_5YR_RT)) + geom_boxplot(aes(fill = size_factor), width = 0.8) + theme_bw()+ labs(x= "Size", y = "repayment rate", fill = "category", title = "High Income")
+
+grid.arrange(plot1,plot3, ncol=2)
+
+```
+
+```{r, message=FALSE, warning=FALSE}
+#Some stats based on major
+
+#For each school identify which major is awarded the most degrees
+attach(df2)
+df2$popular_major <- NA
+df2$popular_major <- colnames(df2[,51:88])[max.col(df2[,51:88],ties.method="first")]
+
+barplot(prop.table(table(df2$popular_major)))
+#the most popular were PCIP51, PCIP52, PCIP24, PCIP11, PCIP50, PCIP47, PCIP39
+
+pop_majors <- df2[df2$popular_major == c('PCIP51', 'PCIP52', 'PCIP24', 'PCIP11', 'PCIP50', 'PCIP47', 'PCIP39'),]
+pop_majors <- pop_majors[complete.cases(pop_majors$popular_major),]
+
+ggplot(data = pop_majors, aes(x = popular_major, y =MD_EARN_WNE_P6)) + geom_boxplot(aes(fill =popular_major ), width = 0.8) + theme_bw() + labs(x= "major", y = "income", fill = "major")
+
+#lets figure out how things change across schools with most popular majors
+```
+
+```{r}
+#Stats based on your standardized test scores
+par(mfrow=c(2,2))
+plot(df2$standardized_score, df2$ADM_RATE, xlab = "standardized test score", ylab = "admission rate", col = "blue")
+
+plot(df2$standardized_score, df2$MD_EARN_WNE_P6, xlab = "standardized test score", ylab = "salary", col = "blue")
+
+plot(df2$standardized_score, df2$TUITIONFEE_OUT, xlab = "standardized test score", ylab = "tuition", col = "blue")
+#The higher the average SAT score the more prestigious the school is, resulting in a higher tuition. 
+```
+
