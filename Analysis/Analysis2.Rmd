@@ -18,13 +18,15 @@ library(dplyr)
 \bigskip
 \bigskip
 
-This document analyzes the College Scorecard Dataset provided by the Federal Government from the years 1996 - 2016. The dataset includes over 1700+ variables with names of over 7000+ colleges in the United States. We will explore this dataset and look at interesting relationships between variables and colleges. We also provide an R Shiny App that lets a user put in personal application information and desired college preferences to look at colleges that would be a "best fit" based on provided information, as well as provide potential costs related to loan repayment and average income for a major after graduation.
+This document analyzes the College Scorecard Dataset provided by the Federal Government from the years 1996 - 2016. The dataset includes over 1700+ variables observed from over 7000+ colleges in the United States. We will explore this dataset and look at interesting relationships between variables and colleges. We also provide an R Shiny App (ShinyDebt) that lets a user put in personal application information and desired college preferences to look at colleges that would be a "best fit" based on provided information, as well as provide potential costs related to loan repayment and average income after graduation.
 
-The dataset is large, spanning over 15 years with 1700 variables. To make our analysis simpler, we chose around 81 variables to look at that relate to a college's descriptive statistics - like admission rates, average SAT/ACT score, average percentage of degrees awarded to a specific major, number of undergraduate students, tuition rates, private and public colleges, etc. We spend the rest of the document detailing useful relations and variables. 
+The dataset is large, spanning over 15 years with 1700 variables. While still small enough to read significant chunks into R, it would still be difficult to clean and interpret that magnitude of data. 
+
+To make our analysis simpler, we chose around 81 variables to look at that relate to a college's descriptive statistics - like admission rates, average SAT/ACT score, average percentage of degrees awarded to a specific major, number of undergraduate students, tuition rates, private and public colleges. We spend the rest of the document detailing useful relationships between cofactors variables. 
 
 ## Cleaning Our Dataset
 
-An average student would like to look at the most recent statistics for a college - so with over 15+ years of data, we only looked at the last 5 years of relevant college statistics. To do this, we merged the years 2010-2015 into one large college data csv file, then took the averages of every column for each College/University. We do this with the following code:
+An average student would like to look at the most recent statistics for a college - these are most likely to affect their prospects. So, over 15+ years of data, we only looked at the last 5 years of relevant college statistics. To do this, we merged the years 2010-2015 into one large college data csv file, then took the unweighted averages of every column for each College/University. We decided not to weight the data from each year as the last 5 years are all recent enough to possibly reflect relevant trends. This was done as follows:
 
 ```{r}
 df1<-read.csv(file='MERGED_2010-15_selected_columns.csv', sep = ',')
@@ -40,16 +42,63 @@ The write.csv line mearly writes a csv file that can easily be looked at.
 
 Looking at our new table that now consists of only 99 variables, we can assess the quality of our data. 
 
-First, we will look at the completeness of the data. We look at the number of N/A values for each row, the average for each row, and the total number of NA values.
+Two measures of data that matter to us when finding inference are completeness and interpratibility. Here we measure completeness as the percent of the data that is not NA or NULL. This might warn us before using a variable that, while perhaps promising in theory, doesn't have the appropriate number of values to map out relationships.
+
+The second measure of data we use is interpratibility. We consider in this scale for numbers to be completely interpretable. However, should we be dealing with a character vector, we check to determine whether or not this character could be used as a factor. If the unique values in the character values are greater than 10% of the length of the vector, we say there are too many values for this to be useful for a factor. This might mark a case where we want to recode a variable using buckets. 
 
 ```{r}
-head(rowSums(is.na(df)))
-mean(rowSums(is.na(df)))
-sum(rowSums(is.na(df)))
-sum(rowSums(is.na(df)))/(8514*99)
+# returns list of interpretability and completeness metrics
+data_quality <- function(df){
+  completeness <- get_df_completeness(df)
+  interpretability <- get_df_interpretability(df)
+  metrics <- list(interpretability = interpretability,
+                  completeness = completeness)
+  return (metrics)
+}
+
+#wrapper for apply function
+get_df_completeness <- function(df){
+  return (apply(df, 2,
+                get_column_completeness))
+}
+
+#Calculates completeness as percentage of non-NULL values
+get_column_completeness <- function(col){
+  all_values <- length(col)
+  bad_values <- sum(is.na(col))
+  return (1 - (bad_values) / (all_values))
+}
+#wrapper for apply function
+get_df_interpretability <- function(df){
+  return (apply(df, 2,
+                get_column_interpretability))
+}
+
+# Calculates completeness as percentage of values 
+# that are easy to use in computation
+get_column_interpretability <- function(col){
+  if (typeof(col) == "character"){
+    potential_factors <- length(unique(col))
+    # If there are too many unique char values
+    # To be broken up usefully into factors
+    # Then interpretability is low
+    if (potential_factors > length(col) / 10)
+      return (0)
+    else{
+      return (1)
+    }
+  }else{
+    all_values <- length(col)
+    na_values <- (sum(is.na(col)))
+    return (1 - (na_values) / (all_values))
+  }
+}
+data_quality(df)
 ```
 
-We can see that the total number of N/As in the data set is equal to 271,205. This is about 30 percent of the total number of values in the data set. Though, this proportion is inflated by the fact that a number of columns only have N/A values. The average number of NAs in a given row is also equal to 31. 
+Sum of the data is as low as 28% percent complete, which bodes poorly for doing analysis with all of the data. Anything less than around 70% full would be grounds for removal, just because we're losing so many colleges at that point. 
+
+We make much stronger statements about interpatibility - only 0 or 1. We find that for most character values in this dataset, using them as factors would not be appropriate. 
 
 We also look at if there is an appropriate amount of data to even explore. If we just merge the past 5 years of data with our selected columns, there would be almost 40,000 observations (colleges), since each college would repeat 5 times and there are over 7,000 colleges to have data for. When we filter down with the average of the past years, we receive 8514 observations of 99 variables. This gives us an appropriate amount of data to look at. 
 
@@ -154,19 +203,19 @@ df2 <- mutate(df, standardized_score = ((SATVRMID / 800) + (SATMTMID/800) + (ACT
 Then check our explanitory variables and how they affect salary, debt, and acceptance rate of the college.
 
 ```{r, message = FALSE, warning = FALSE}
-#size of school
+#Size of school
 
 attach(df2)
-#order by size
+#Order by size
 df2 <- df2[order(-UGDS),]
 
-#major outliers affecting data (university of phoenix w/ 300,000 students)
+#Major outliers affecting data (university of phoenix w/ 300,000 students)
 df2 <- df2[df2$UGDS < 50000,]
 
-#mean school size
-mean(df2$UGDS, na.rm = TRUE)
+#Mean school size
+#mean(df2$UGDS, na.rm = TRUE)
 
-#group schools into small, med, and large categories
+#Group schools into small, med, and large categories
 
 require(dplyr)
 levels <- c(0, 5000,15000,Inf)
@@ -174,17 +223,17 @@ labels <- c("small", "medium", "large")
 df2$size_factor<-NA
 df2$size_factor <- cut(df2$UGDS,levels, labels = labels)
 
-#check to see if expected earnings increase or decrease
+#Check to see if expected earnings increase or decrease
 
 library(ggplot2)
 ggplot(data = df2, aes(x = UGDS, y =MD_EARN_WNE_P6)) + geom_boxplot(aes(fill = size_factor), width = 0.8) + theme_bw()
 
 
-#admissions rate
+#Admissions rate
 
 ggplot(data = df2, aes(x = UGDS, y =ADM_RATE)) + geom_boxplot(aes(fill = size_factor), width = 0.8) + theme_bw()
 
-#repay rates for Low, med, and high income across different sized colleges
+#Repay rates for Low, med, and high income across different sized colleges
 
 require(gridExtra)
 
@@ -196,10 +245,9 @@ grid.arrange(plot1,plot3, ncol=2)
 ```
 
 ```{r, message=FALSE, warning=FALSE}
-#some stats based on major
+#Some stats based on major
 
-#for each school identify which major is awarded the most degrees
-#colnames(df2[,51:88])[apply(df2[, 51:88],1,which.max)]
+#For each school identify which major is awarded the most degrees
 attach(df2)
 df2$popular_major <- NA
 df2$popular_major <- colnames(df2[,51:88])[max.col(df2[,51:88],ties.method="first")]
@@ -216,7 +264,7 @@ ggplot(data = pop_majors, aes(x = popular_major, y =MD_EARN_WNE_P6)) + geom_boxp
 ```
 
 ```{r}
-#some stats based on your standardized test scores
+#Stats based on your standardized test scores
 par(mfrow=c(2,2))
 plot(df2$standardized_score, df2$ADM_RATE, xlab = "standardized test score", ylab = "admission rate", col = "blue")
 
